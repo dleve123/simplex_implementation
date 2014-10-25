@@ -1,0 +1,12 @@
+Simplex Algorithm Implementation
+
+1. Given a starting basis, row reduce that such that the portion of the constraint coefficient matrix for the basis (B) is the identity matrix
+  - so B should == Identity, -c^transpose should be 0 for entries above B.
+2. Choose next column to pivot on
+  - IF all of -c^transpose is negative OR 0, then terminate with final bfs
+  - ELSE find the column with the largest -c^transpose value
+3. Choose which entry of row you are going to pivot on
+  - compare b vector to column entering the basis. The smallest value will be the entry you are pivoting on.
+    - If entries of b are negative, you fucked up
+    - If an entry of the column entering the basis is 0, then there is degeneracy
+    - If all of the entries of the column entering the basis is < 0, then the simplex problem is unbounded.
