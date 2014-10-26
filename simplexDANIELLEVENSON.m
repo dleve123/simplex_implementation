@@ -14,14 +14,13 @@ function [ xsol, optimalobjective, basisfinal ] = simplexDANIELLEVENSON(A, b, c,
 
     current_tableau = pretableau;
     is_first_pass = true;
+    next_basis_ids = BAS;
+    max_cost_coeff = inf;
 
-    % Round necessary to handle weird MATLAB numeric edge cases.
-    while (round(max(current_tableau(1,2:end-1))) > 0) % While the largest cost vector is still possitive
-        % TODO: Implement finding next basis!
-        current_basis = BAS; % STUB CODE!!!
+    while (max_cost_coeff > 0) % While the largest cost vector is still possitive
 
-        for i = 1:numel(current_basis) % for every basis column
-            basis_column_index = BAS(i) + 1; % add 1 because we want to index the inner tableau, not the 0 vector at the rhs of it.
+        for i = 1:numel(next_basis_ids) % for every basis column
+            basis_column_index = next_basis_ids(i) + 1; % add 1 because we want to index the inner tableau, not the full one.
 
             basis_column = current_tableau(2:end, basis_column_index);
             current_b = current_tableau(2:end, end);
@@ -30,38 +29,39 @@ function [ xsol, optimalobjective, basisfinal ] = simplexDANIELLEVENSON(A, b, c,
             pivot_index = -1;
             unbounded = true;
 
-
-            % for every element in basis column
-             for j = 1:num_of_rows(basis_column)
-                lhs_el = basis_column(j);
-                rhs_el = current_b(j);
-
-                if (lhs_el == 0)
+             % for every element in basis column
+             if (is_first_pass == true)
+                pivot_index = i + 1;
+                if (current_b(i) == 0)
                     fprintf('Degeneracy detected!\n');
-                    pivot_index = j;
-                    % Break out of loop???
-                elseif (lhs_el < 0)
-                    fprintf('coefficient negative - skipping!\n');
-                    % TODO (Tweak) : Skip loop iteration!!
-                else
+                end
+                if (max(basis_column) > 0)
                     unbounded = false;
-                    if (is_first_pass == true)
-                        pivot_index = i + 1
+                end
+             else
+                 for j = 1:num_of_rows(basis_column)
+                    lhs_el = basis_column(j);
+                    rhs_el = current_b(j);
+
+                    if (rhs_el == 0)
+                        fprintf('Degeneracy detected!\n');
+                        pivot_index = j;
+                        % Break out of loop???
+                    elseif (lhs_el < 0)
+                        continue;
                     else
+                        unbounded = false;
                         ratio = rhs_el / lhs_el;
                         if ratio < min_ratio
                             pivot_index = j + 1;  % convert inner tableau index to full tableau index.
                             min_ratio = ratio;
                         end
                     end
-                end
-
+                 end
              end
 
              % TODO: throw exception/abort program because unbounded!
              unbounded
-
-             % make pivoting element equal to 1;
 
              pivot_to_1 = eye(num_of_rows(current_tableau));
              pivot_to_1(pivot_index, pivot_index) = 1./current_tableau(pivot_index,basis_column_index);
@@ -81,6 +81,14 @@ function [ xsol, optimalobjective, basisfinal ] = simplexDANIELLEVENSON(A, b, c,
 
              current_tableau
         end
+        
+        % TODO: Implement finding next basis!
+        current_cost_vector = current_tableau(1,2:end-1);
+        max_cost_coeff = max(current_cost_vector);
+        next_basis_id = find(current_cost_vector == max_cost_coeff);
+        
+        next_basis_ids = [next_basis_id];
+
         is_first_pass = false;
     end
 
@@ -88,8 +96,9 @@ function [ xsol, optimalobjective, basisfinal ] = simplexDANIELLEVENSON(A, b, c,
 
     xsol = zeros(num_of_cols(inner_pretableau),1);
     current_b = current_tableau(2:end,end);
-
-    xsol(current_basis) = current_b;
+    
+    basisfinal = find(0 == current_tableau(1,2:end-1)); % Perhaps this isn't rigorous enough of a check??
+    
+    xsol(basisfinal) = current_b;
     optimalobjective = current_tableau(1,end);
-    basisfinal = current_basis;
 end
