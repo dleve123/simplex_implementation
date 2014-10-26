@@ -8,7 +8,7 @@ function [ xsol, optimalobjective, basisfinal ] = simplexDANIELLEVENSON(A, b, c,
     num_of_cols = @(matrix) size(matrix, 2);
 
     % create simplex pretableau
-
+    
     inner_pretableau = [-c'; A];
     pretableau = [[1 zeros(1, num_of_rows(b))]' inner_pretableau [0; b]]
 
@@ -16,9 +16,9 @@ function [ xsol, optimalobjective, basisfinal ] = simplexDANIELLEVENSON(A, b, c,
     is_first_pass = true;
     next_basis_ids = BAS;
     max_cost_coeff = inf;
-
-    while (max_cost_coeff > 0) % While the largest cost vector is still possitive
-
+    
+    
+    while (roundn(max_cost_coeff, -4) > 0) % While the largest cost vector is still possitive        
         for i = 1:numel(next_basis_ids) % for every basis column
             basis_column_index = next_basis_ids(i) + 1; % add 1 because we want to index the inner tableau, not the full one.
 
@@ -32,8 +32,8 @@ function [ xsol, optimalobjective, basisfinal ] = simplexDANIELLEVENSON(A, b, c,
              % for every element in basis column
              if (is_first_pass == true)
                 pivot_index = i + 1;
-                if (current_b(i) == 0)
-                    fprintf('Degeneracy detected!\n');
+                if (roundn(current_b(i), -4) == 0)
+                    fprintf('Degeneracy detected in below tableau!\n');
                 end
                 if (max(basis_column) > 0)
                     unbounded = false;
@@ -43,13 +43,12 @@ function [ xsol, optimalobjective, basisfinal ] = simplexDANIELLEVENSON(A, b, c,
                     lhs_el = basis_column(j);
                     rhs_el = current_b(j);
 
-                    if (rhs_el == 0)
-                        fprintf('Degeneracy detected!\n');
-                        pivot_index = j;
-                        % Break out of loop???
-                    elseif (lhs_el < 0)
-                        continue;
-                    else
+                    
+                    if (lhs_el > 0)
+                        if (roundn(rhs_el, -4) == 0)
+                            fprintf('Degeneracy detected in below tableau!\n');
+                        end
+
                         unbounded = false;
                         ratio = rhs_el / lhs_el;
                         if ratio < min_ratio
@@ -60,8 +59,9 @@ function [ xsol, optimalobjective, basisfinal ] = simplexDANIELLEVENSON(A, b, c,
                  end
              end
 
-             % TODO: throw exception/abort program because unbounded!
-             unbounded
+             if unbounded
+                 error('Problem unbounded! - Exiting!\n');
+             end
 
              pivot_to_1 = eye(num_of_rows(current_tableau));
              pivot_to_1(pivot_index, pivot_index) = 1./current_tableau(pivot_index,basis_column_index);
@@ -82,7 +82,6 @@ function [ xsol, optimalobjective, basisfinal ] = simplexDANIELLEVENSON(A, b, c,
              current_tableau
         end
         
-        % TODO: Implement finding next basis!
         current_cost_vector = current_tableau(1,2:end-1);
         max_cost_coeff = max(current_cost_vector);
         next_basis_id = find(current_cost_vector == max_cost_coeff);
@@ -93,12 +92,17 @@ function [ xsol, optimalobjective, basisfinal ] = simplexDANIELLEVENSON(A, b, c,
     end
 
     fprintf('Optimal BFS and objective function value found!\n');
+    
 
     xsol = zeros(num_of_cols(inner_pretableau),1);
     current_b = current_tableau(2:end,end);
     
-    basisfinal = find(0 == current_tableau(1,2:end-1)); % Perhaps this isn't rigorous enough of a check??
+    final_x_indices = [];
+    for r_index = 2:num_of_rows(current_tableau)
+        final_x_indices(end+1) = find(current_tableau(r_index,2:end-1) == 1);
+    end
     
-    xsol(basisfinal) = current_b;
+    xsol(final_x_indices) = current_b;
+    basisfinal = find(current_tableau(1,2:end-1) == 0);
     optimalobjective = current_tableau(1,end);
 end
