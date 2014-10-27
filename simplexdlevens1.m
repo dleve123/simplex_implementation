@@ -1,5 +1,5 @@
-function [ xsol, optimalobjective, basisfinal ] = simplexDANIELLEVENSON(A, b, c, BAS)
-%simplexDANIELLEVENSON Solves LPs using the Simplex Method
+function [xsol, optimalobjective, basisfinal] = simplexdlevens1(A, b, c, BAS)
+%simplexdlevens1 Solves LPs using the Simplex Method
 %   Custom simplex method implementation for HW 5
 
     % utility methods
@@ -35,9 +35,7 @@ function [ xsol, optimalobjective, basisfinal ] = simplexDANIELLEVENSON(A, b, c,
                 if (roundn(current_b(i), -4) == 0)
                     fprintf('Degeneracy detected in below tableau!\n');
                 end
-                if (max(basis_column) > 0)
-                    unbounded = false;
-                end
+                unbounded = false;
              else
                  for j = 1:num_of_rows(basis_column)
                     lhs_el = basis_column(j);
@@ -60,7 +58,7 @@ function [ xsol, optimalobjective, basisfinal ] = simplexDANIELLEVENSON(A, b, c,
              end
 
              if unbounded
-                 error('Problem unbounded! - Exiting!\n');
+                 error('Problem unbounded! - Exiting!');
              end
 
              pivot_to_1 = eye(num_of_rows(current_tableau));
@@ -93,16 +91,16 @@ function [ xsol, optimalobjective, basisfinal ] = simplexDANIELLEVENSON(A, b, c,
 
     fprintf('Optimal BFS and objective function value found!\n');
     
-
-    xsol = zeros(num_of_cols(inner_pretableau),1);
     current_b = current_tableau(2:end,end);
     
-    final_x_indices = [];
-    for r_index = 2:num_of_rows(current_tableau)
-        final_x_indices(end+1) = find(current_tableau(r_index,2:end-1) == 1);
+    basisfinal = zeros(1,num_of_rows(b));
+    
+    for r = 1:num_of_rows(b)
+        basisfinal(r) = find(roundn(current_tableau(r+1,2:end-1), -4) == 1);
     end
     
-    xsol(final_x_indices) = current_b;
-    basisfinal = find(current_tableau(1,2:end-1) == 0);
+    xsol = zeros(num_of_rows(c),1);
+    xsol(basisfinal) = current_b;
+    
     optimalobjective = current_tableau(1,end);
 end
